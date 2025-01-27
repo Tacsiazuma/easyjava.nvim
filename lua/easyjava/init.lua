@@ -9,45 +9,71 @@ end
 local M = {}
 
 -- Function to find the directory containing pom.xml
-local function find_pom_directory()
+M._find_pom_directory = function(file_path)
     -- Get the current buffer's file path
-    local file_path = vim.fn.expand("%:p") -- Absolute path of the current file
     if file_path == "" then
-        print("No file in the current buffer")
-        return nil
+        return print("No file in the current buffer")
     end
 
     -- Start searching from the current file's directory
     local current_dir = Path:new(file_path):parent()
 
-    while true do
+    local i = 0
+    while i < 10 do
         -- Check if pom.xml exists in the current directory
-        local pom_path = Path:new(current_dir, "pom.xml")
+        local pom_path = current_dir:joinpath("pom.xml")
         if pom_path:exists() then
             return current_dir:absolute() -- Return the absolute path of the directory
         end
 
         -- Move to the parent directory
         current_dir = current_dir:parent()
-
+        print("'" .. current_dir .. "'")
         -- If we've reached the root directory, stop
-        if current_dir:is_root() then
-            print("pom.xml not found")
-            return nil
+        if current_dir == "/" or current_dir == Path:new("C:\\") then
+            return print("pom.xml not found")
         end
+        i = i + 1
     end
 end
+local function create_file(root, package, file, type)
+    local path = root .. 'src/main/java/' .. package .. '/' .. file .. '.java'
+
+    -- Create the directory if it doesn't exist
+    local dir = root .. '/src/main/java/' .. package
+    os.execute('mkdir -p ' .. dir)
+
+    -- Open the file for writing
+    local f = io.open(path, 'w')
+    if f then
+        -- Write an initial header or content to the file
+        f:write('package ' .. package .. ";")
+
+        -- Close the file after writing
+        f:close()
+        print('File created: ' .. path)
+    else
+        print('Error creating file: ' .. path)
+    end
+end
+
 local function on_create_class()
-    local options = {
-        prompt = "Enter class name: ",
-        completion = function()
-            print("called")
-        end
-    }
-    vim.ui.input(options, function(choice)
-        print(choice)
+    local file_path = vim.fn.expand("%:p") -- Absolute path of the current file
+    local root = M._find_pom_directory(file_path)
+    if root == nil then
+        return print("Not in a maven project")
+    end
+    local items = M._find_java_packages(root, false)
+    if items == nil then
+        return print("Can't find any packages")
+    end
+    vim.ui.select(items, {}, function(package)
+        vim.ui.input({}, function(file)
+            create_file(root, package, file, "class")
+        end)
     end)
 end
+
 
 
 local function on_create_test()
