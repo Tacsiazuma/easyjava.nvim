@@ -23,7 +23,7 @@ jobs:
           sudo luarocks install luacheck
 
       - name: Run Luacheck
-        run: luacheck lua tests
+        run: luacheck lua test
 
   stylua:
     name: StyLua
@@ -35,7 +35,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           version: v2.0.2
-          args: --check lua tests
+          args: --check lua test
 
   typecheck:
     name: typecheck
