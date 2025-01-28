@@ -63,7 +63,9 @@ M._create_file = function(root, package, file, type)
         f:write('package ' .. package .. ";\n\n")
         if type == 'interface' then
             f:write('public interface ' .. file .. ' {}')
-        else 
+        elseif type == 'record' then
+            f:write('public record ' .. file .. '() {}')
+        else
             f:write('public class ' .. file .. ' {}')
         end
         -- Close the file after writing
@@ -75,30 +77,27 @@ M._create_file = function(root, package, file, type)
     end
 end
 
-local function on_create_class()
+local function on_create(type)
     local file_path = vim.fn.expand("%:p") -- Absolute path of the current file
     local root = M._find_pom_directory(file_path)
     if root == nil then
         return print("Not in a maven project")
     end
-    local items = M._find_java_packages(root, false)
+    local test = false
+    if type == test then
+        test = true
+    end
+    local items = M._find_java_packages(root, test)
     if items == nil then
         return print("Can't find any packages")
     end
     vim.ui.select(items, {}, function(package)
         vim.ui.input({}, function(file)
-            M._create_file(root, package, file, "class")
+            M._create_file(root, package, file, type)
         end)
     end)
 end
 
-
-
-local function on_create_test()
-end
-
-local function on_create_interface()
-end
 
 local default_options = {
     autofill = true
@@ -145,11 +144,13 @@ M.setup = function(opts)
         local options = { prompt = "Please select:" }
         local on_choice = function(choice)
             if choice == "Create class" then
-                on_create_class()
+                on_create("class")
             elseif choice == "Create test" then
-                on_create_test()
+                on_create("test")
+            elseif choice == "Create interface" then
+                on_create("interface")
             else
-                on_create_interface()
+                on_create("record")
             end
         end
         vim.ui.select(items, options, on_choice)
