@@ -1,4 +1,22 @@
 local path = require("plenary.path")
+local function active_buffer()
+    -- Get the current buffer ID
+    local current_buf = vim.api.nvim_get_current_buf()
+    -- Get the file name of the current buffer
+    local current_buf_path = vim.api.nvim_buf_get_name(current_buf)
+
+    -- Compare paths
+    return current_buf_path
+end
+
+local function split_lines(content)
+    -- Split the file content into lines
+    local lines = {}
+    for line in string.gmatch(content, "([^\n]*)\n?") do
+        table.insert(lines, line)
+    end
+    return lines
+end
 describe("plugin", function()
     it("should load fine", function()
         local sut = require "easyjava"
@@ -54,7 +72,7 @@ describe("plugin", function()
     end)
     describe("creating file", function()
         local sut = require("easyjava")
-        after_each(function ()
+        after_each(function()
             path:new(vim.loop.cwd() .. "/fixture/src/main/java/com/example/Created.java"):rm()
             path:new(vim.loop.cwd() .. "/fixture/src/test/java/com/testing/CreatedTest.java"):rm()
             path:new(vim.loop.cwd() .. "/fixture/src/test/java/com/testing/test/CreatedTest.java"):rm()
@@ -69,12 +87,38 @@ describe("plugin", function()
         end)
         it("should create non-existing packages in the proper folder", function()
             sut._create_file(vim.loop.cwd() .. "/fixture", "com.testing.test", "CreatedTest", "test")
-            assert.are_true(path:new(vim.loop.cwd() .. "/fixture/src/test/java/com/testing/test/CreatedTest.java"):exists())
+            assert.are_true(path:new(vim.loop.cwd() .. "/fixture/src/test/java/com/testing/test/CreatedTest.java")
+                :exists())
         end)
         it("should create classes with proper package name", function()
             sut._create_file(vim.loop.cwd() .. "/fixture", "com.example", "Created", "class")
-            local content = path:new(vim.loop.cwd() .. "/fixture/src/main/java/com/example/Created.java"):read()
-            assert.are_same("package com.example;", content)
+            local content = split_lines(path:new(vim.loop.cwd() .. "/fixture/src/main/java/com/example/Created.java")
+                :read())
+            assert.are_same("package com.example;", content[1])
+        end)
+        it("should create classes with proper type", function()
+            sut._create_file(vim.loop.cwd() .. "/fixture", "com.example", "Created", "class")
+            local content = split_lines(path:new(vim.loop.cwd() .. "/fixture/src/main/java/com/example/Created.java")
+                :read())
+            assert.are_same("public class Created {}", content[3])
+        end)
+        it("should create interfaces with proper type", function()
+            sut._create_file(vim.loop.cwd() .. "/fixture", "com.example", "Created", "interface")
+            local content = split_lines(path:new(vim.loop.cwd() .. "/fixture/src/main/java/com/example/Created.java")
+                :read())
+            assert.are_same("public interface Created {}", content[3])
+        end)
+        it("should create tests with proper type", function()
+            sut._create_file(vim.loop.cwd() .. "/fixture", "com.testing", "CreatedTest", "test")
+            local content = split_lines(path:new(vim.loop.cwd() .. "/fixture/src/test/java/com/testing/CreatedTest.java")
+                :read())
+            assert.are_same("public class CreatedTest {}", content[3])
+        end)
+
+        it("should open the file as a buffer", function()
+            sut._create_file(vim.loop.cwd() .. "/fixture", "com.example", "Created", "class")
+            local filename = vim.loop.cwd() .. "/fixture/src/main/java/com/example/Created.java"
+            assert.are_same(filename, active_buffer())
         end)
     end)
 

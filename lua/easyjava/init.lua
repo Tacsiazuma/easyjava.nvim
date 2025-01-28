@@ -60,11 +60,16 @@ M._create_file = function(root, package, file, type)
     local f = io.open(path, 'w')
     if f then
         -- Write an initial header or content to the file
-        f:write('package ' .. package .. ";")
-
+        f:write('package ' .. package .. ";\n\n")
+        if type == 'interface' then
+            f:write('public interface ' .. file .. ' {}')
+        else 
+            f:write('public class ' .. file .. ' {}')
+        end
         -- Close the file after writing
         f:close()
         print('File created: ' .. path)
+        vim.cmd("edit " .. path)
     else
         print('Error creating file: ' .. path)
     end
@@ -82,7 +87,7 @@ local function on_create_class()
     end
     vim.ui.select(items, {}, function(package)
         vim.ui.input({}, function(file)
-            create_file(root, package, file, "class")
+            M._create_file(root, package, file, "class")
         end)
     end)
 end
