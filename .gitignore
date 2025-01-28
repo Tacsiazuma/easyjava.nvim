@@ -1,3 +1,4 @@
 pom.xml
 !sample/pom.xml
 !fixture/pom.xml
+.testenv

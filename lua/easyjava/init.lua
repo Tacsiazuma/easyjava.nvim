@@ -15,32 +15,45 @@ M._find_pom_directory = function(file_path)
         return print("No file in the current buffer")
     end
 
-    -- Start searching from the current file's directory
-    local current_dir = Path:new(file_path):parent()
+    local current_dir = vim.fn.fnamemodify(file_path, ":p:h")
 
-    local i = 0
-    while i < 10 do
-        -- Check if pom.xml exists in the current directory
-        local pom_path = current_dir:joinpath("pom.xml")
-        if pom_path:exists() then
-            return current_dir:absolute() -- Return the absolute path of the directory
+    print(current_dir)
+    -- Helper function to check if a file exists
+    local function file_exists(path)
+        local f = io.open(path, "r")
+        if f then
+            f:close()
+            return true
         end
-
-        -- Move to the parent directory
-        current_dir = current_dir:parent()
-        print("'" .. current_dir .. "'")
-        -- If we've reached the root directory, stop
-        if current_dir == "/" or current_dir == Path:new("C:\\") then
-            return print("pom.xml not found")
-        end
-        i = i + 1
+        return false
     end
+
+    -- Traverse up the directory tree
+    while current_dir ~= "/" do
+        print(current_dir)
+        local pom_path = current_dir .. "/pom.xml"
+        if file_exists(pom_path) then
+            return current_dir
+        end
+        -- Move up one directory
+        current_dir = vim.fn.fnamemodify(current_dir, ":h")
+    end
+
+    -- If no pom.xml is found, return nil
+    return nil
 end
-local function create_file(root, package, file, type)
-    local path = root .. 'src/main/java/' .. package .. '/' .. file .. '.java'
+M._create_file = function(root, package, file, type)
+    package = string.gsub(package, "%.", "/")
+    local prefix
+    if type == "test" then
+        prefix = "/src/test/java/"
+    else
+        prefix = "/src/main/java/"
+    end
+    local path = root .. prefix .. package .. '/' .. file .. '.java'
 
     -- Create the directory if it doesn't exist
-    local dir = root .. '/src/main/java/' .. package
+    local dir = root .. prefix .. package
     os.execute('mkdir -p ' .. dir)
 
     -- Open the file for writing
