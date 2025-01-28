@@ -43,17 +43,17 @@ M._find_pom_directory = function(file_path)
     return nil
 end
 M._create_file = function(root, package, file, type)
-    package = string.gsub(package, "%.", "/")
+    local package_folder = string.gsub(package, "%.", "/")
     local prefix
     if type == "test" then
         prefix = "/src/test/java/"
     else
         prefix = "/src/main/java/"
     end
-    local path = root .. prefix .. package .. '/' .. file .. '.java'
+    local path = root .. prefix .. package_folder .. '/' .. file .. '.java'
 
     -- Create the directory if it doesn't exist
-    local dir = root .. prefix .. package
+    local dir = root .. prefix .. package_folder
     os.execute('mkdir -p ' .. dir)
 
     -- Open the file for writing
