@@ -17,7 +17,6 @@ M._find_pom_directory = function(file_path)
 
     local current_dir = vim.fn.fnamemodify(file_path, ":p:h")
 
-    print(current_dir)
     -- Helper function to check if a file exists
     local function file_exists(path)
         local f = io.open(path, "r")
@@ -99,46 +98,78 @@ local function on_create(type)
 end
 
 
-local default_options = {
-    autofill = true
-}
-local autocmd_id = -1
-M.setup = function(opts)
-    opts = opts or default_options
-    if opts.autofill then
-        autocmd_id = vim.api.nvim_create_autocmd("BufReadPost", {
-            pattern = "pom.xml",
-            callback = function()
-                local file_path = get_script_location() .. "/../../sample/pom.xml"
-                local file = io.open(file_path, "r")
-                if not file then
-                    vim.api.nvim_err_writeln("Error: Could not open file " .. file_path)
-                    return
-                end
-
-                -- Read the file content
-                local lines = {}
-                for line in file:lines() do
-                    table.insert(lines, line)
-                end
-                file:close()
-                -- Insert the lines into the current buffer
-                local buf = vim.api.nvim_get_current_buf()
-                local read_lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-                local empty = true
-                for _, line in ipairs(read_lines) do
-                    if line ~= "" then
-                        empty = false
-                    end
-                end
-                if empty then
-                    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-                end
-            end
-        })
-    elseif not opts.autofill and autocmd_id ~= -1 then
-        vim.api.nvim_del_autocmd(autocmd_id)
+function populate_with_content(lines)
+    local buf = vim.api.nvim_get_current_buf()
+    local read_lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    local empty = true
+    for _, line in ipairs(read_lines) do
+        if line ~= "" then
+            empty = false
+        end
     end
+    if empty then
+        vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+    end
+end
+
+local function get_package_name(abs_path)
+    -- Find "src/main/java/" or "src/test/java/" in the path
+    local match = abs_path:match("src/[^/]+/java/")
+    if not match then
+        return nil -- Return nil if neither is found
+    end
+
+    -- Extract the package path after "src/main/java/" or "src/test/java/"
+    local package_path = abs_path:match(match .. "(.*)")
+
+    -- Remove filename from the path
+    package_path = package_path:gsub("/[^/]+$", "")
+
+    -- Convert `/` to `.`
+    local package_name = package_path:gsub("/", ".")
+
+    return package_name
+end
+
+local function get_class_name(abs_path)
+    local filename = abs_path:match("([^/]+)%.java$")
+    return filename
+end
+M.setup = function(opts)
+    vim.api.nvim_create_autocmd("BufReadPost", {
+        pattern = "pom.xml",
+        callback = function()
+            local file_path = get_script_location() .. "/../../sample/pom.xml"
+            local file = io.open(file_path, "r")
+            if not file then
+                vim.api.nvim_err_writeln("Error: Could not open file " .. file_path)
+                return
+            end
+
+            -- Read the file content
+            local lines = {}
+            for line in file:lines() do
+                table.insert(lines, line)
+            end
+            file:close()
+            -- Insert the lines into the current buffer
+            populate_with_content(lines)
+        end
+    })
+    vim.api.nvim_create_autocmd("BufReadPost", {
+        pattern = "*.java",
+        callback = function()
+            local path = vim.api.nvim_buf_get_name(0)
+            local class_name = get_class_name(path)
+            local package_name = get_package_name(path)
+            local lines = {
+                "package " .. package_name .. ";",
+                "",
+                "public class "..class_name.." {}",
+            }
+            populate_with_content(lines)
+        end
+    })
     vim.api.nvim_create_user_command("EasyJava", function()
         local items = { "Create class", "Create test", "Create interface" }
         local options = { prompt = "Please select:" }
