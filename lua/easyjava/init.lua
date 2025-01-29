@@ -1,5 +1,9 @@
 local plenary = require("plenary")
 local Path = require("plenary.path")
+
+---Gets the path of the current script
+---Required for getting the pom.xml's content
+---@return string
 local function get_script_location()
 	-- Get the path of the current script
 	local info = debug.getinfo(2, "S")
@@ -8,7 +12,10 @@ local function get_script_location()
 end
 local M = {}
 
--- Function to find the directory containing pom.xml
+---Function to find the directory containing pom.xml
+---
+---@param file_path string the file path where we start traversing up
+---@return string # The directory where pom.xml is
 M._find_pom_directory = function(file_path)
 	-- Get the current buffer's file path
 	if file_path == "" then
@@ -41,6 +48,13 @@ M._find_pom_directory = function(file_path)
 	-- If no pom.xml is found, return nil
 	return nil
 end
+
+---Creates a file and populates it based on the type.
+---
+---@param root string The root folder
+---@param package string The java package (e.g.: com.example)
+---@param file string The filename without the extension
+---@param type string The type of the file to create
 M._create_file = function(root, package, file, type)
 	local package_folder = string.gsub(package, "%.", "/")
 	local prefix
@@ -76,6 +90,9 @@ M._create_file = function(root, package, file, type)
 	end
 end
 
+---Callback when the user selects file to create
+---@param type string the type of the file
+---@return nil
 local function on_create(type)
 	local file_path = vim.fn.expand("%:p") -- Absolute path of the current file
 	local root = M._find_pom_directory(file_path)
@@ -97,6 +114,8 @@ local function on_create(type)
 	end)
 end
 
+---Populate the current buffer with lines if the buffer is empty
+---@param lines string[] The lines to be written to the buffer.
 local function populate_with_content(lines)
 	local buf = vim.api.nvim_get_current_buf()
 	local read_lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
@@ -111,6 +130,9 @@ local function populate_with_content(lines)
 	end
 end
 
+---Gets the package name based on the path given
+---@param abs_path string the absolute path to the file
+---@return string|nil # The package name with dot notation.
 local function get_package_name(abs_path)
 	-- Find "src/main/java/" or "src/test/java/" in the path
 	local match = abs_path:match("src/[^/]+/java/")
@@ -130,10 +152,15 @@ local function get_package_name(abs_path)
 	return package_name
 end
 
+---Gets the class name based on the path of the file
+---@param abs_path string The absolute path of the file.
+---@return string # The class name
 local function get_class_name(abs_path)
 	local filename = abs_path:match("([^/]+)%.java$")
 	return filename
 end
+
+---Initial setup function
 M.setup = function()
 	vim.api.nvim_create_autocmd("BufReadPost", {
 		pattern = "pom.xml",
@@ -187,6 +214,10 @@ M.setup = function()
 	end, { bang = false })
 end
 
+---Find java packages inside a root directory
+---@param root string the root folder
+---@param testing boolean if we need to get test packages
+---@return string[] # The individual packages
 M._find_java_packages = function(root, testing)
 	testing = testing or false
 	local java_src_dir

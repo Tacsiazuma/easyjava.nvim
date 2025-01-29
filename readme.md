@@ -2,6 +2,10 @@
 
 Plugin to autopopulate files based on their package and add imports in Java projects.
 
+## Requirements
+
+Neovim 0.9.4+
+
 ## Usage
 
 Import it with your favourite package manager:
