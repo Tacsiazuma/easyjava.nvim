@@ -11,6 +11,7 @@ Lazy
 ```
 {
    "tacsiazuma/easyjava.nvim",
+   dependencies = { 'nvim-lua/plenary.nvim' },
    opts = {} -- so lazy calls the setup function
 }
 ```
