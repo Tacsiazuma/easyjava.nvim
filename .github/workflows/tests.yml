@@ -38,6 +38,12 @@ jobs:
           args: --check lua test
 
   typecheck:
+    strategy:
+      matrix:
+        nvim_tag:
+          - v0.8.3
+          - v0.9.4
+          - v0.10.0
     name: typecheck
     runs-on: ubuntu-22.04
     steps:
@@ -45,6 +51,7 @@ jobs:
       - uses: stevearc/nvim-typecheck-action@v2
         with:
           path: lua
+          nvim-version: ${{ matrix.nvim_tag }}
 
   run_tests:
     strategy:
