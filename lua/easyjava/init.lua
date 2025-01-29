@@ -15,7 +15,7 @@ local M = {}
 ---Function to find the directory containing pom.xml
 ---
 ---@param file_path string the file path where we start traversing up
----@return string # The directory where pom.xml is
+---@return string|nil # The directory where pom.xml is or nil if not found
 M._find_pom_directory = function(file_path)
 	-- Get the current buffer's file path
 	if file_path == "" then
