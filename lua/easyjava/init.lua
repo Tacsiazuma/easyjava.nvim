@@ -98,7 +98,7 @@ local function on_create(type)
 end
 
 
-function populate_with_content(lines)
+local function populate_with_content(lines)
     local buf = vim.api.nvim_get_current_buf()
     local read_lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
     local empty = true
@@ -135,7 +135,7 @@ local function get_class_name(abs_path)
     local filename = abs_path:match("([^/]+)%.java$")
     return filename
 end
-M.setup = function(opts)
+M.setup = function()
     vim.api.nvim_create_autocmd("BufReadPost", {
         pattern = "pom.xml",
         callback = function()
